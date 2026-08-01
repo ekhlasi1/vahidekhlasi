@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>گروه مشاورین املاک اخلاصی</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div id="app">
+
+        <!-- ===== هدر ===== -->
+        <header class="header">
+            <div class="header-inner">
+                <div class="header-brand">
+                    <div class="brand-icon"><i class="fas fa-building"></i></div>
+                    <div class="brand-text">
+                        <span class="brand-title">گروه مشاورین املاک اخلاصی</span>
+                        <span class="brand-subtitle">سامانه مدیریت فایل‌های ملکی</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="user-badge" id="userBadge" style="display:none;">
+                        <span class="user-avatar"><i class="fas fa-user"></i></span>
+                        <span class="user-name" id="agentName">مشاور</span>
+                    </div>
+                    <button class="btn-gold" id="btnNewListing" style="display:none;">
+                        <i class="fas fa-plus"></i> فایل جدید
+                    </button>
+                    <button class="btn-gold" id="btnNewContract" style="display:none;">
+                        <i class="fas fa-file-signature"></i> قرارداد
+                    </button>
+                    <button class="btn-login" id="btnLoginTrigger">
+                        <i class="fas fa-sign-in-alt"></i> ورود
+                    </button>
+                    <button class="btn-outline" id="btnLogout" style="display:none;">
+                        <i class="fas fa-sign-out-alt"></i> خروج
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== ناوبری ===== -->
+        <nav class="nav-tabs" id="navTabs">
+            <button class="tab active" data-tab="listings"><i class="fas fa-th-list"></i> فایل‌ها</button>
+            <button class="tab" data-tab="contracts" id="contractsTab" style="display:none;"><i class="fas fa-file-contract"></i> قراردادها</button>
+            <button class="tab" data-tab="users" id="usersTab" style="display:none;"><i class="fas fa-users-cog"></i> کاربران</button>
+            <button class="tab" data-tab="settings" id="settingsTab" style="display:none;"><i class="fas fa-cog"></i> تنظیمات</button>
+        </nav>
+
+        <!-- ===== بدنه ===== -->
+        <div class="app-body">
+
+            <!-- ===== بخش فایل‌ها ===== -->
+            <div id="listingsSection" class="main-section">
+                <div class="toolbar">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="جست‌وجو در عنوان یا کد فایل…" />
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-btn active" data-deal="all">همه</button>
+                        <button class="filter-btn" data-deal="sale">فروش</button>
+                        <button class="filter-btn" data-deal="rent">اجاره</button>
+                    </div>
+                </div>
+
+                <div class="results-meta" id="resultsMeta"></div>
+                <div class="listings-grid" id="listingsGrid"></div>
+                <div id="emptyState" class="empty-state hidden">
+                    <i class="fas fa-home empty-icon"></i>
+                    <h3>فایلی پیدا نشد</h3>
+                    <p>برای شروع، یک فایل جدید ثبت کنید.</p>
+                    <button class="btn-gold" id="btnEmptyNew" style="display:none;">
+                        <i class="fas fa-plus"></i> ثبت فایل جدید
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== بخش قراردادها ===== -->
+            <div id="contractsSection" class="main-section" style="display:none;">
+                <div class="toolbar">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="contractSearchInput" placeholder="جست‌وجو در نام موجر یا مستاجر…" />
+                    </div>
+                    <button class="btn-gold" id="btnNewContractTop" style="display:none;">
+                        <i class="fas fa-plus"></i> قرارداد جدید
+                    </button>
+                </div>
+                <div class="results-meta" id="contractResultsMeta"></div>
+                <div class="listings-grid" id="contractsGrid"></div>
+                <div id="contractEmptyState" class="empty-state hidden">
+                    <i class="fas fa-file-contract empty-icon"></i>
+                    <h3>هیچ قراردادی ثبت نشده است</h3>
+                    <button class="btn-gold" id="btnEmptyContract" style="display:none;">
+                        <i class="fas fa-plus"></i> ثبت قرارداد جدید
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== بخش کاربران ===== -->
+            <div id="usersSection" class="main-section" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users-cog"></i> مدیریت کاربران</h2>
+                        <span class="badge-admin">فقط مدیر</span>
+                    </div>
+                    <div id="userList"></div>
+                    <div class="add-user-form">
+                        <div class="form-group">
+                            <label>نام کاربری</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="newUsername" placeholder="نام کاربری" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>رمز عبور</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="text" id="newPassword" placeholder="رمز عبور" />
+                            </div>
+                        </div>
+                        <button class="btn-gold" id="btnAddUser">
+                            <i class="fas fa-plus"></i> افزودن کاربر
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== بخش تنظیمات ===== -->
+            <div id="settingsSection" class="main-section" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-cog"></i> تنظیمات اتصال به گیت‌هاب</h2>
+                    </div>
+                    <p style="color:var(--text-light);font-size:13px;margin-bottom:16px;">
+                        برای ذخیره اطلاعات در گیت‌هاب، تنظیمات زیر را تکمیل کنید.
+                    </p>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>توکن گیت‌هاب</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-key input-icon"></i>
+                                <input type="password" id="githubToken" placeholder="ghp_..." />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>نام کاربری گیت‌هاب</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="githubOwner" value="ekhlasi1" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>نام مخزن</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-folder input-icon"></i>
+                                <input type="text" id="githubRepo" value="vahidekhlasi" readonly />
+                            </div>
+                        </div>
+                        <div class="form-group" style="display:flex;gap:10px;align-items:flex-end;">
+                            <button class="btn-gold" id="saveSettingsBtn">
+                                <i class="fas fa-save"></i> ذخیره تنظیمات
+                            </button>
+                            <button class="btn-outline" id="testConnectionBtn">
+                                <i class="fas fa-plug"></i> تست اتصال
+                            </button>
+                        </div>
+                    </div>
+                    <div class="status-info" id="githubStatus">
+                        <span class="status-dot offline"></span>
+                        <span>در حال بررسی اتصال...</span>
+                    </div>
+                    <div class="backup-info" style="margin-top:12px;">
+                        <i class="fas fa-clock"></i>
+                        <span>پشتیبان‌گیری خودکار هر ۳ ساعت انجام می‌شود</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================
+    مودال ورود
+    ============================================================ -->
+    <div id="loginOverlay" class="modal-overlay hidden">
+        <div class="modal-login">
+            <div class="login-header">
+                <div class="login-icon"><i class="fas fa-building"></i></div>
+                <h2>ورود به سامانه</h2>
+                <p>گروه مشاورین املاک اخلاصی</p>
+            </div>
+            <div id="loginError" class="login-error hidden">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="loginErrorText">نام کاربری یا رمز عبور اشتباه است.</span>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>نام کاربری</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" placeholder="نام کاربری خود را وارد کنید" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>رمز عبور</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" placeholder="رمز عبور خود را وارد کنید" required />
+                    </div>
+                </div>
+                <div class="login-options">
+                    <label class="checkbox">
+                        <input type="checkbox" id="rememberMe" />
+                        <span class="checkmark"></span>
+                        مرا به خاطر بسپار
+                    </label>
+                </div>
+                <button type="submit" class="btn-gold btn-full">
+                    <i class="fas fa-sign-in-alt"></i> ورود به سامانه
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    مودال فرم فایل
+    ============================================================ -->
+    <div id="listingModalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="listingModalTitle"><i class="fas fa-plus-circle"></i> ثبت فایل جدید</h2>
+                <button class="modal-close" id="closeListingModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="listingForm">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group full">
+                            <label>نوع معامله</label>
+                            <div class="segmented" id="dealSeg">
+                                <button type="button" data-val="sale" class="active">فروش</button>
+                                <button type="button" data-val="rent">اجاره</button>
+                            </div>
+                        </div>
+                        <div class="form-group full">
+                            <label>نوع ملک</label>
+                            <div class="segmented" id="typeSeg">
+                                <button type="button" data-val="apartment" class="active">آپارتمان</button>
+                                <button type="button" data-val="villa">ویلا</button>
+                                <button type="button" data-val="land">زمین</button>
+                            </div>
+                        </div>
+                        <div class="form-group full">
+                            <label>عنوان فایل *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-tag input-icon"></i>
+                                <input type="text" id="fTitle" placeholder="مثال: آپارتمان نوساز سه‌خوابه" required />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label id="priceLabel">قیمت (تومان) *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-money-bill-wave input-icon"></i>
+                                <input type="number" id="fPrice" placeholder="۴۲۰۰۰۰۰۰۰۰" required />
+                            </div>
+                        </div>
+                        <div class="form-group" id="depositField">
+                            <label>ودیعه/رهن (تومان)</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-hand-holding-usd input-icon"></i>
+                                <input type="number" id="fDeposit" placeholder="در صورت اجاره" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>متراژ (متر مربع) *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-ruler-combined input-icon"></i>
+                                <input type="number" id="fArea" placeholder="۱۴۵" required />
+                            </div>
+                        </div>
+                        <div class="form-group" id="roomsField">
+                            <label>تعداد خواب</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-bed input-icon"></i>
+                                <input type="number" id="fRooms" placeholder="۳" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>منطقه/محله *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-map-marker-alt input-icon"></i>
+                                <input type="text" id="fRegion" placeholder="سعادت‌آباد" required />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>آدرس دقیق</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-road input-icon"></i>
+                                <input type="text" id="fAddress" placeholder="خیابان، کوچه، پلاک" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>وضعیت</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-circle input-icon"></i>
+                                <select id="fStatus">
+                                    <option value="available">موجود</option>
+                                    <option value="reserved">بیعانه‌شده</option>
+                                    <option value="sold">فروخته/اجاره‌شده</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>شماره تماس مشاور *</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-phone input-icon"></i>
+                                <input type="tel" id="fPhone" placeholder="۰۹۱۲۱۲۳۴۵۶۷" required />
+                            </div>
+                        </div>
+                        <div class="form-group full">
+                            <label>تصویر اول</label>
+                            <div class="file-upload" id="fileUpload1">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>انتخاب تصویر</span>
+                                <input type="file" id="fImage1" accept="image/*" />
+                            </div>
+                            <div id="preview1" class="image-preview"></div>
+                        </div>
+                        <div class="form-group full">
+                            <label>تصویر دوم</label>
+                            <div class="file-upload" id="fileUpload2">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>انتخاب تصویر</span>
+                                <input type="file" id="fImage2" accept="image/*" />
+                            </div>
+                            <div id="preview2" class="image-preview"></div>
+                        </div>
+                        <div class="form-group full">
+                            <label>توضیحات</label>
+                            <textarea id="fDesc" placeholder="ویژگی‌های ملک، امکانات، نکات مهم…" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn-gold"><i class="fas fa-save"></i> ذخیره فایل</button>
+                    <button type="button" class="btn-outline" id="cancelListingModal"><i class="fas fa-times"></i> انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    مودال فرم قرارداد
+    ============================================================ -->
+    <div id="contractModalOverlay" class="modal-overlay hidden">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2 id="contractModalTitle"><i class="fas fa-file-signature"></i> ثبت قرارداد اجاره</h2>
+                <button class="modal-close" id="closeContractModal"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="contractForm">
+                <div class="modal-body">
+                    <div class="steps" id="formSteps">
+                        <div class="step active" data-step="1"><span class="step-num">۱</span><span class="step-label">طرفین</span></div>
+                        <div class="step" data-step="2"><span class="step-num">۲</span><span class="step-label">موضوع</span></div>
+                        <div class="step" data-step="3"><span class="step-num">۳</span><span class="step-label">مدت &amp; بها</span></div>
+                        <div class="step" data-step="4"><span class="step-num">۴</span><span class="step-label">شرایط</span></div>
+                        <div class="step" data-step="5"><span class="step-num">۵</span><span class="step-label">تکمیل</span></div>
+                    </div>
+
+                    <div class="step-content active" data-step="1">
+                        <div class="step-title">ماده 1: طرفین قرارداد</div>
+                        <div class="form-row">
+                            <div class="form-group full"><label style="font-weight:700;color:var(--gold);"><i class="fas fa-user-tie"></i> موجر/موجرین</label></div>
+                            <div class="form-group"><label>نام</label><input type="text" id="c_mojer_name" placeholder="نام" /></div>
+                            <div class="form-group"><label>نام خانوادگی</label><input type="text" id="c_mojer_family" placeholder="نام خانوادگی" /></div>
+                            <div class="form-group"><label>نام پدر</label><input type="text" id="c_mojer_father" placeholder="نام پدر" /></div>
+                            <div class="form-group"><label>شماره شناسنامه</label><input type="text" id="c_mojer_id" placeholder="شماره" /></div>
+                            <div class="form-group"><label>محل صدور</label><input type="text" id="c_mojer_issue" placeholder="محل صدور" /></div>
+                            <div class="form-group"><label>کد ملی</label><input type="text" id="c_mojer_national" placeholder="کد ملی" /></div>
+                            <div class="form-group"><label>تلفن</label><input type="text" id="c_mojer_phone" placeholder="تلفن" /></div>
+                            <div class="form-group full"><label>آدرس</label><input type="text" id="c_mojer_address" placeholder="آدرس کامل" /></div>
+                            <div class="form-group full" style="margin-top:8px;"><label style="font-weight:700;color:var(--gold);"><i class="fas fa-user"></i> مستاجر/مستاجرین</label></div>
+                            <div class="form-group"><label>نام</label><input type="text" id="c_mostaajer_name" placeholder="نام" /></div>
+                            <div class="form-group"><label>نام خانوادگی</label><input type="text" id="c_mostaajer_family" placeholder="نام خانوادگی" /></div>
+                            <div class="form-group"><label>نام پدر</label><input type="text" id="c_mostaajer_father" placeholder="نام پدر" /></div>
+                            <div class="form-group"><label>شماره شناسنامه</label><input type="text" id="c_mostaajer_id" placeholder="شماره" /></div>
+                            <div class="form-group"><label>محل صدور</label><input type="text" id="c_mostaajer_issue" placeholder="محل صدور" /></div>
+                            <div class="form-group"><label>کد ملی</label><input type="text" id="c_mostaajer_national" placeholder="کد ملی" /></div>
+                            <div class="form-group"><label>تلفن</label><input type="text" id="c_mostaajer_phone" placeholder="تلفن" /></div>
+                            <div class="form-group full"><label>آدرس</label><input type="text" id="c_mostaajer_address" placeholder="آدرس کامل" /></div>
+                        </div>
+                    </div>
+
+                    <div class="step-content" data-step="2">
+                        <div class="step-title">ماده 2: موضوع قرارداد</div>
+                        <div class="form-row">
+                            <div class="form-group"><label>سهم (دانگ)</label><input type="text" id="c_share" placeholder="۶" /></div>
+                            <div class="form-group full"><label>آدرس ملک</label><input type="text" id="c_property_address" placeholder="آدرس کامل ملک" /></div>
+                            <div class="form-group"><label>پلاک</label><input type="text" id="c_plaque" placeholder="پلاک" /></div>
+                            <div class="form-group"><label>طبقه</label><input type="text" id="c_floor" placeholder="طبقه" /></div>
+                            <div class="form-group"><label>واحد</label><input type="text" id="c_unit" placeholder="واحد" /></div>
+                            <div class="form-group"><label>کدپستی</label><input type="text" id="c_postal_code" placeholder="کدپستی" /></div>
+                            <div class="form-group"><label>پلاک ثبتی اصلی</label><input type="text" id="c_reg_plaque_main" placeholder="پلاک ثبتی اصلی" /></div>
+                            <div class="form-group"><label>پلاک ثبتی فرعی</label><input type="text" id="c_reg_plaque_sub" placeholder="پلاک ثبتی فرعی" /></div>
+                            <div class="form-group"><label>بخش ثبتی</label><input type="text" id="c_reg_section" placeholder="بخش ثبتی" /></div>
+                            <div class="form-group"><label>مساحت (متر مربع)</label><input type="text" id="c_area" placeholder="مساحت" /></div>
+                            <div class="form-group"><label>سریال سند</label><input type="text" id="c_deed_serial" placeholder="سریال سند" /></div>
+                            <div class="form-group"><label>صفحه</label><input type="text" id="c_deed_page" placeholder="صفحه" /></div>
+                            <div class="form-group"><label>دفتر</label><input type="text" id="c_deed_book" placeholder="دفتر" /></div>
+                            <div class="form-group"><label>شماره ثبت ملک</label><input type="text" id="c_property_reg_no" placeholder="شماره ثبت" /></div>
+                            <div class="form-group"><label>اتاق خواب</label><input type="text" id="c_rooms" placeholder="تعداد" /></div>
+                            <div class="form-group"><label>پارکینگ</label><input type="text" id="c_parking_no" placeholder="شماره" /></div>
+                            <div class="form-group"><label>انباری</label><input type="text" id="c_storage_no" placeholder="شماره" /></div>
+                            <div class="form-group"><label>متراژ انباری</label><input type="text" id="c_storage_area" placeholder="متراژ" /></div>
+                            <div class="form-group"><label>خط تلفن</label><input type="text" id="c_phone_lines" placeholder="تعداد" /></div>
+                            <div class="form-group full"><label>شماره تلفن</label><input type="text" id="c_phone_number" placeholder="شماره تلفن" /></div>
+                            <div class="form-group full"><label>کاربری</label><input type="text" id="c_usage" placeholder="کاربری (سکونت، محل کار، ...)" /></div>
+                        </div>
+                    </div>
+
+                    <div class="step-content" data-step="3">
+                        <div class="step-title">ماده 3 و 4: مدت اجاره و اجاره بها</div>
+                        <div class="form-row">
+                            <div class="form-group"><label>شروع (روز)</label><input type="text" id="c_start_day" placeholder="روز" /></div>
+                            <div class="form-group"><label>شروع (ماه)</label><input type="text" id="c_start_month" placeholder="ماه" /></div>
+                            <div class="form-group"><label>شروع (سال)</label><input type="text" id="c_start_year" placeholder="سال" /></div>
+                            <div class="form-group"><label>پایان (روز)</label><input type="text" id="c_end_day" placeholder="روز" /></div>
+                            <div class="form-group"><label>پایان (ماه)</label><input type="text" id="c_end_month" placeholder="ماه" /></div>
+                            <div class="form-group"><label>پایان (سال)</label><input type="text" id="c_end_year" placeholder="سال" /></div>
+                            <div class="form-group"><label>عقد (روز)</label><input type="text" id="c_contract_day" placeholder="روز" /></div>
+                            <div class="form-group"><label>عقد (ماه)</label><input type="text" id="c_contract_month" placeholder="ماه" /></div>
+                            <div class="form-group"><label>عقد (سال)</label><input type="text" id="c_contract_year" placeholder="سال" /></div>
+                            <div class="form-group"><label>تحویل (روز)</label><input type="text" id="c_delivery_day" placeholder="روز" /></div>
+                            <div class="form-group"><label>تحویل (ماه)</label><input type="text" id="c_delivery_month" placeholder="ماه" /></div>
+                            <div class="form-group"><label>تحویل (سال)</label><input type="text" id="c_delivery_year" placeholder="سال" /></div>
+                            <div class="form-group"><label>اجاره ماهانه (ریال)</label><input type="text" id="c_monthly_rent" placeholder="مبلغ" /></div>
+                            <div class="form-group"><label>قرض الحسنه (ریال)</label><input type="text" id="c_loan_amount" placeholder="مبلغ" /></div>
+                            <div class="form-group full"><label>قرض الحسنه به حروف</label><input type="text" id="c_loan_words" placeholder="مبلغ به حروف" /></div>
+                        </div>
+                    </div>
+
+                    <div class="step-content" data-step="4">
+                        <div class="step-title">ماده 5 و 6 و 7: شرایط و تکمیل</div>
+                        <div class="form-row">
+                            <div class="form-group"><label>تعداد نفرات</label><input type="text" id="c_tenant_count" placeholder="تعداد" /></div>
+                            <div class="form-group full"><label>نوع کاربری</label><input type="text" id="c_usage_type" placeholder="مسکونی، اداری، تجاری، کارگاهی" /></div>
+                            <div class="form-group"><label>اجرت المثل روزانه (ریال)</label><input type="text" id="c_daily_penalty" placeholder="مبلغ" /></div>
+                            <div class="form-group"><label>خسارت تاخیر روزانه (ریال)</label><input type="text" id="c_delay_penalty" placeholder="مبلغ" /></div>
+                            <div class="form-group"><label>شهرستان</label><input type="text" id="c_city" placeholder="شهرستان" /></div>
+                            <div class="form-group"><label>حق الزحمه موجر (ریال)</label><input type="text" id="c_commission_mojer" placeholder="مبلغ" /></div>
+                            <div class="form-group"><label>حق الزحمه مستاجر (ریال)</label><input type="text" id="c_commission_mostaajer" placeholder="مبلغ" /></div>
+                            <div class="form-group full"><label>نام مشاور املاک</label><input type="text" id="c_agent_name" placeholder="نام مشاور" /></div>
+                            <div class="form-group"><label>شماره ثبت قرارداد</label><input type="text" id="c_contract_number" placeholder="شماره ثبت" /></div>
+                            <div class="form-group"><label>شناسه صنفی مشاور</label><input type="text" id="c_agent_id" placeholder="شناسه صنفی" /></div>
+                            <div class="form-group"><label>شماره سریال هولوگرام</label><input type="text" id="c_hologram" placeholder="شماره سریال" /></div>
+                            <div class="form-group full"><label>توضیحات</label><textarea id="c_notes" placeholder="توضیحات اضافی..." rows="2"></textarea></div>
+                        </div>
+                    </div>
+
+                    <div class="step-content" data-step="5">
+                        <div class="complete-step">
+                            <div class="complete-icon"><i class="fas fa-check-circle"></i></div>
+                            <h3>اطلاعات تکمیل شد!</h3>
+                            <p>برای ثبت قرارداد روی دکمه "ذخیره قرارداد" کلیک کنید.</p>
+                            <div class="complete-actions">
+                                <button type="button" class="btn-gold" id="previewContractBtn"><i class="fas fa-eye"></i> پیش‌نمایش</button>
+                                <button type="submit" class="btn-gold btn-primary" id="saveContractBtn"><i class="fas fa-save"></i> ذخیره قرارداد</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step-nav">
+                        <button type="button" class="btn-outline" id="prevStepBtn" style="display:none;"><i class="fas fa-arrow-right"></i> قبلی</button>
+                        <button type="button" class="btn-gold" id="nextStepBtn">بعدی <i class="fas fa-arrow-left"></i></button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" id="cancelContractModal"><i class="fas fa-times"></i> انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    مودال پیش‌نمایش قرارداد
+    ============================================================ -->
+    <div id="previewModalOverlay" class="modal-overlay hidden">
+        <div class="modal modal-large">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-pdf"></i> پیش‌نمایش قرارداد اجاره</h2>
+                <button class="modal-close" id="closePreviewModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body"><div class="preview-content" id="previewContent"></div></div>
+            <div class="modal-footer">
+                <button class="btn-gold btn-primary" id="downloadPDFBtn"><i class="fas fa-download"></i> دانلود PDF</button>
+                <button class="btn-outline" id="closePreviewModal2"><i class="fas fa-times"></i> بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+    مودال‌های تایید
+    ============================================================ -->
+    <div id="confirmModalOverlay" class="modal-overlay confirm-modal hidden">
+        <div class="modal-confirm">
+            <div class="confirm-icon danger"><i class="fas fa-trash-alt"></i></div>
+            <h3>حذف این فایل؟</h3>
+            <p>این عملیات قابل بازگشت نیست.</p>
+            <div class="confirm-actions">
+                <button class="btn-danger" id="confirmDeleteBtn"><i class="fas fa-check"></i> بله، حذف کن</button>
+                <button class="btn-outline" id="cancelDeleteBtn"><i class="fas fa-times"></i> انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmContractModalOverlay" class="modal-overlay confirm-modal hidden">
+        <div class="modal-confirm">
+            <div class="confirm-icon danger"><i class="fas fa-trash-alt"></i></div>
+            <h3>حذف این قرارداد؟</h3>
+            <p>این عملیات قابل بازگشت نیست.</p>
+            <div class="confirm-actions">
+                <button class="btn-danger" id="confirmContractDeleteBtn"><i class="fas fa-check"></i> بله، حذف کن</button>
+                <button class="btn-outline" id="cancelContractDeleteBtn"><i class="fas fa-times"></i> انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="restoreConfirmModal" class="modal-overlay confirm-modal hidden">
+        <div class="modal-confirm">
+            <div class="confirm-icon warn"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3>بازیابی اطلاعات</h3>
+            <p>تمام اطلاعات فعلی با اطلاعات موجود در فایل پشتیبان جایگزین می‌شود.</p>
+            <div id="restorePreview" class="restore-preview"></div>
+            <div class="confirm-actions">
+                <button class="btn-danger" id="confirmRestoreBtn"><i class="fas fa-check"></i> بله، بازیابی کن</button>
+                <button class="btn-outline" id="cancelRestoreBtn"><i class="fas fa-times"></i> انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== مودال جزئیات ===== -->
+    <div id="detailModalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> جزئیات فایل</h2>
+                <button class="modal-close" id="closeDetailModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+            <div class="modal-footer" id="detailFooter">
+                <button class="btn-gold" id="detailEditBtn" style="display:none;"><i class="fas fa-edit"></i> ویرایش</button>
+                <button class="btn-danger" id="detailDeleteBtn" style="display:none;"><i class="fas fa-trash"></i> حذف</button>
+                <button class="btn-outline" id="closeDetailModal2"><i class="fas fa-times"></i> بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== توست ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
