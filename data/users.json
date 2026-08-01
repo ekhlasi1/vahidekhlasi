@@ -1,0 +1,14 @@
+[
+  {
+    "username": "admin",
+    "password": "ekhlasi1404",
+    "displayName": "مدیر سامانه",
+    "role": "admin"
+  },
+  {
+    "username": "reza",
+    "password": "reza1404",
+    "displayName": "رضا احمدی",
+    "role": "agent"
+  }
+]
