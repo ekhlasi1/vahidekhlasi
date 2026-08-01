@@ -1,21 +1,12 @@
 /* ==========================================================================
-   گروه مشاورین املاک اخلاصی — منطق برنامه (نسخه‌ی نهایی با گیت‌هاب)
+   گروه مشاورین املاک اخلاصی — منطق برنامه (نسخهٔ بدون استفاده از GitHub API در سمت کلاینت)
+   تغییر: حذف توکن/فراخوانی مستقیم به GitHub و ذخیره‌سازی محلی برای کار روی GitHub Pages
    ========================================================================== */
 (function () {
   "use strict";
 
-  // ===== تنظیمات GitHub (توکن و مخزن) =====
-  const GITHUB_TOKEN = "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";
-  const REPO_OWNER = "your-username";      // <-- اینجا نام کاربری گیت‌هاب خود را بنویس
-  const REPO_NAME = "your-repo-name";      // <-- اینجا نام مخزن خود را بنویس
-  const FILE_PATH = "data/listings.json";
-  const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-
-  // ===== کاربران =====
-  const USERS = [
-    { username: "admin", password: "ekhlasi1404", displayName: "مدیر سامانه" },
-    { username: "reza", password: "reza1404", displayName: "رضا احمدی" },
-  ];
+  // ===== تنظیمات محلی (بدون استفاده از GitHub API در کلاینت) =====
+  // توجه: برای نگهداری دائمی روی گیت‌هاب باید یک راه‌حل سمت سرور یا GitHub Actions + توکن محرمانه استفاده کنید.
 
   const LS_SESSION = "ekhlasi_session_v1";
   const LS_REMEMBER = "ekhlasi_remember_v1";
@@ -24,6 +15,12 @@
   const TYPE_LABEL = { apartment: "آپارتمان", villa: "ویلا", land: "زمین" };
   const DEAL_LABEL = { sale: "فروش", rent: "اجاره" };
   const STATUS_LABEL = { available: "موجود", reserved: "بیعانه‌شده", sold: "فروخته/اجاره‌شده" };
+
+  // ===== کاربران =====
+  const USERS = [
+    { username: "admin", password: "ekhlasi1404", displayName: "مدیر سامانه" },
+    { username: "reza", password: "reza1404", displayName: "رضا احمدی" },
+  ];
 
   // ===== ابزارها =====
   const $ = (sel) => document.querySelector(sel);
@@ -42,57 +39,27 @@
     setTimeout(() => el.remove(), 2600);
   }
 
-  // ===== لایه داده =====
+  // ===== لایه داده (فقط localStorage) =====
   const Store = {
     _cache: null,
 
-    async fetchFromGitHub() {
-      try {
-        const res = await fetch(API_URL, {
-          headers: { Authorization: `token ${GITHUB_TOKEN}` },
-        });
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        const content = atob(data.content);
-        return JSON.parse(content);
-      } catch {
-        const backup = localStorage.getItem(LS_BACKUP);
-        if (backup) {
-          try { return JSON.parse(backup); } catch {}
-        }
-        return this.getDefaultData();
+    async fetch() {
+      // ابتدا از حافظهٔ محلی (backup) بخوانید
+      const backup = localStorage.getItem(LS_BACKUP);
+      if (backup) {
+        try { return JSON.parse(backup); } catch {}
       }
+      // در غیر این صورت دادهٔ پیش‌فرض را برگردان
+      return this.getDefaultData();
     },
 
-    async saveToGitHub(list) {
+    async saveLocal(list) {
       try {
-        const res = await fetch(API_URL, {
-          headers: { Authorization: `token ${GITHUB_TOKEN}` },
-        });
-        let sha = null;
-        if (res.ok) {
-          const data = await res.json();
-          sha = data.sha;
-        }
-        const content = btoa(unescape(encodeURIComponent(JSON.stringify(list, null, 2))));
-        const body = { message: "به‌روزرسانی", content };
-        if (sha) body.sha = sha;
-
-        const putRes = await fetch(API_URL, {
-          method: "PUT",
-          headers: {
-            Authorization: `token ${GITHUB_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(body),
-        });
-        if (!putRes.ok) throw new Error();
         this._cache = list;
         localStorage.setItem(LS_BACKUP, JSON.stringify(list));
         return true;
       } catch {
-        toast("⚠️ خطا در ذخیره! داده در حافظه‌ی موقت نگهداری شد.");
-        localStorage.setItem(LS_BACKUP, JSON.stringify(list));
+        toast("⚠️ خطا در ذخیره‌سازی محلی.");
         return false;
       }
     },
@@ -136,14 +103,14 @@
 
     async all() {
       if (this._cache) return this._cache;
-      const data = await this.fetchFromGitHub();
+      const data = await this.fetch();
       this._cache = data;
       return data;
     },
 
     async save(list) {
       this._cache = list;
-      await this.saveToGitHub(list);
+      await this.saveLocal(list);
     },
 
     nextCode(list) {
@@ -240,7 +207,7 @@
     let list = await Store.all();
     list = list.filter((l) => {
       if (deal !== "all" && l.dealType !== deal) return false;
-      
+
       let typeOk = false;
       for (let t of types) {
         if (t.value === l.propertyType) { typeOk = true; break; }
@@ -265,9 +232,9 @@
     return list;
   }
 
-  // ===== رندر کارت‌ها =====
+  // ===== بقیهٔ کد تقریباً تغییر نکرده؛ از نسخهٔ اصلی بازنشر شده =====
   function escapeHtml(s) {
-    return String(s || "").replace(/[&<>"']/g, (c) => ({
+    return String(s || "").replace(/[&<>\"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
     }[c]));
   }
@@ -337,29 +304,17 @@
     $("#statAvailable").textContent = fa(all.filter((l) => l.status === "available").length);
   }
 
-  // ===== فرم =====
+  // ===== فرم، مودال‌ها و بقیهٔ منطق بدون تغییر بزرگ (فقط به ذخیره‌سازی محلی وابسته شدند) =====
   function setSeg(container, value) {
     $$(`#${container} button`).forEach((b) => b.classList.toggle("active", b.dataset.val === value));
   }
-
   function toggleDealFields() {
     const isRent = currentDeal === "rent";
     $("#priceLabel").textContent = isRent ? "اجاره ماهانه (تومان)" : "قیمت (تومان)";
     $("#depositField").style.display = isRent ? "block" : "none";
   }
-
-  function toggleTypeFields() {
-    $("#roomsField").style.display = currentType === "land" ? "none" : "block";
-  }
-
-  function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
+  function toggleTypeFields() { $("#roomsField").style.display = currentType === "land" ? "none" : "block"; }
+  function readFileAsDataURL(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); }); }
 
   async function openListingModal(item) {
     editingId = item ? item.id : null;
@@ -388,26 +343,15 @@
     $("#fImage2").value = "";
 
     if (item && item.images && item.images.length) {
-      if (item.images[0]) {
-        const img = document.createElement("img");
-        img.src = item.images[0];
-        $("#preview1").appendChild(img);
-      }
-      if (item.images[1]) {
-        const img = document.createElement("img");
-        img.src = item.images[1];
-        $("#preview2").appendChild(img);
-      }
+      if (item.images[0]) { const img = document.createElement("img"); img.src = item.images[0]; $("#preview1").appendChild(img); }
+      if (item.images[1]) { const img = document.createElement("img"); img.src = item.images[1]; $("#preview2").appendChild(img); }
     }
 
     $("#listingModalOverlay").classList.remove("hidden");
     setTimeout(() => $("#fTitle").focus(), 50);
   }
 
-  function closeListingModal() {
-    $("#listingModalOverlay").classList.add("hidden");
-    editingId = null;
-  }
+  function closeListingModal() { $("#listingModalOverlay").classList.add("hidden"); editingId = null; }
 
   function setupImagePreview(inputId, previewId) {
     const input = document.getElementById(inputId);
@@ -417,11 +361,7 @@
       const file = this.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = document.createElement("img");
-        img.src = ev.target.result;
-        preview.appendChild(img);
-      };
+      reader.onload = (ev) => { const img = document.createElement("img"); img.src = ev.target.result; preview.appendChild(img); };
       reader.readAsDataURL(file);
     });
   }
@@ -433,14 +373,8 @@
     const file2 = document.getElementById("fImage2").files[0];
     let images = [];
 
-    if (file1) {
-      const data = await readFileAsDataURL(file1);
-      images.push(data);
-    }
-    if (file2) {
-      const data = await readFileAsDataURL(file2);
-      images.push(data);
-    }
+    if (file1) { const data = await readFileAsDataURL(file1); images.push(data); }
+    if (file2) { const data = await readFileAsDataURL(file2); images.push(data); }
 
     if (editingId) {
       const existing = await Store.all();
@@ -484,34 +418,12 @@
     renderAll();
   }
 
-  // ===== مودال‌ها =====
+  // ===== مودال‌ها و باقی کد (بدون تغییرات ساختاری) =====
   let detailId = null;
-
-  function openDetail(id) {
-    const item = Store._cache.find((l) => l.id === id);
-    if (!item) return;
-    detailId = id;
-    const body = $("#detailBody");
-    body.innerHTML = buildDetailHTML(item, false);
-    $("#detailModalOverlay").classList.remove("hidden");
-  }
-
-  function closeDetail() {
-    $("#detailModalOverlay").classList.add("hidden");
-    detailId = null;
-  }
-
-  function openPublicView(id) {
-    const item = Store._cache.find((l) => l.id === id);
-    if (!item) return;
-    const body = $("#viewBody");
-    body.innerHTML = buildDetailHTML(item, true);
-    $("#viewModalOverlay").classList.remove("hidden");
-  }
-
-  function closePublicView() {
-    $("#viewModalOverlay").classList.add("hidden");
-  }
+  function openDetail(id) { const item = Store._cache.find((l) => l.id === id); if (!item) return; detailId = id; const body = $("#detailBody"); body.innerHTML = buildDetailHTML(item, false); $("#detailModalOverlay").classList.remove("hidden"); }
+  function closeDetail() { $("#detailModalOverlay").classList.add("hidden"); detailId = null; }
+  function openPublicView(id) { const item = Store._cache.find((l) => l.id === id); if (!item) return; const body = $("#viewBody"); body.innerHTML = buildDetailHTML(item, true); $("#viewModalOverlay").classList.remove("hidden"); }
+  function closePublicView() { $("#viewModalOverlay").classList.add("hidden"); }
 
   function buildDetailHTML(item, isPublic) {
     const imagesHTML = (item.images && item.images.length)
@@ -546,45 +458,12 @@
     `;
   }
 
-  // ===== حذف =====
-  function askDelete(id) {
-    pendingDeleteId = id;
-    $("#confirmModalOverlay").classList.remove("hidden");
-  }
+  function askDelete(id) { pendingDeleteId = id; $("#confirmModalOverlay").classList.remove("hidden"); }
+  function closeConfirm() { $("#confirmModalOverlay").classList.add("hidden"); pendingDeleteId = null; }
 
-  function closeConfirm() {
-    $("#confirmModalOverlay").classList.add("hidden");
-    pendingDeleteId = null;
-  }
+  function exportJSON() { const data = JSON.stringify(Store._cache || [], null, 2); const blob = new Blob([data], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `ekhlasi-listings-${new Date().toISOString().slice(0, 10)}.json`; a.click(); URL.revokeObjectURL(url); toast("فایل پشتیبان دانلود شد."); }
 
-  // ===== خروجی/ورودی =====
-  function exportJSON() {
-    const data = JSON.stringify(Store._cache || [], null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `ekhlasi-listings-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast("فایل پشتیبان دانلود شد.");
-  }
-
-  function importJSON(file) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      try {
-        const parsed = JSON.parse(reader.result);
-        if (!Array.isArray(parsed)) throw new Error();
-        await Store.save(parsed);
-        renderAll();
-        toast("فایل‌ها بارگذاری شدند.");
-      } catch {
-        toast("فایل ورودی معتبر نیست.");
-      }
-    };
-    reader.readAsText(file);
-  }
+  function importJSON(file) { const reader = new FileReader(); reader.onload = async () => { try { const parsed = JSON.parse(reader.result); if (!Array.isArray(parsed)) throw new Error(); await Store.save(parsed); renderAll(); toast("فایل‌ها بارگذاری شدند."); } catch { toast("فایل ورودی معتبر نیست."); } }; reader.readAsText(file); }
 
   // ===== اتصال رویدادها =====
   function bindEvents() {
@@ -593,26 +472,14 @@
       const u = $("#username").value.trim();
       const p = $("#password").value;
       const user = Auth.tryLogin(u, p);
-      if (!user) {
-        $("#loginErrorText").textContent = "نام کاربری یا رمز عبور اشتباه است.";
-        $("#loginError").classList.remove("hidden");
-        return;
-      }
+      if (!user) { $("#loginErrorText").textContent = "نام کاربری یا رمز عبور اشتباه است."; $("#loginError").classList.remove("hidden"); return; }
       $("#loginError").classList.add("hidden");
       Auth.setSession(user, $("#rememberMe").checked);
       showApp(user);
     });
 
-    $("#btnLogout").addEventListener("click", () => {
-      Auth.logout();
-      showLogin();
-    });
-
-    $("#searchInput").addEventListener("input", () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => renderAll(), 300);
-    });
-
+    $("#btnLogout").addEventListener("click", () => { Auth.logout(); showLogin(); });
+    $("#searchInput").addEventListener("input", () => { clearTimeout(timeoutId); timeoutId = setTimeout(() => renderAll(), 300); });
     $("#dealFilter").addEventListener("change", renderAll);
     $("#typeFilter").addEventListener("change", renderAll);
     $("#statusFilter").addEventListener("change", renderAll);
@@ -624,16 +491,8 @@
     $("#cancelListingModal").addEventListener("click", closeListingModal);
     $("#listingForm").addEventListener("submit", handleListingSubmit);
 
-    $$("#dealSeg button").forEach((b) => b.addEventListener("click", () => {
-      currentDeal = b.dataset.val;
-      setSeg("dealSeg", currentDeal);
-      toggleDealFields();
-    }));
-    $$("#typeSeg button").forEach((b) => b.addEventListener("click", () => {
-      currentType = b.dataset.val;
-      setSeg("typeSeg", currentType);
-      toggleTypeFields();
-    }));
+    $$("#dealSeg button").forEach((b) => b.addEventListener("click", () => { currentDeal = b.dataset.val; setSeg("dealSeg", currentDeal); toggleDealFields(); }));
+    $$("#typeSeg button").forEach((b) => b.addEventListener("click", () => { currentType = b.dataset.val; setSeg("typeSeg", currentType); toggleTypeFields(); }));
 
     setupImagePreview("fImage1", "preview1");
     setupImagePreview("fImage2", "preview2");
@@ -644,71 +503,30 @@
       const id = btn.dataset.id;
       const action = btn.dataset.action;
       if (action === "view") openDetail(id);
-      else if (action === "edit") {
-        const item = Store._cache.find((l) => l.id === id);
-        openListingModal(item);
-      } else if (action === "viewPublic") {
-        openPublicView(id);
-      }
+      else if (action === "edit") { const item = Store._cache.find((l) => l.id === id); openListingModal(item); }
+      else if (action === "viewPublic") openPublicView(id);
     });
 
     $("#closeDetailModal").addEventListener("click", closeDetail);
     $("#closeDetailModal2").addEventListener("click", closeDetail);
-    $("#detailEditBtn").addEventListener("click", () => {
-      const item = Store._cache.find((l) => l.id === detailId);
-      closeDetail();
-      openListingModal(item);
-    });
-    $("#detailDeleteBtn").addEventListener("click", () => {
-      const id = detailId;
-      closeDetail();
-      askDelete(id);
-    });
+    $("#detailEditBtn").addEventListener("click", () => { const item = Store._cache.find((l) => l.id === detailId); closeDetail(); openListingModal(item); });
+    $("#detailDeleteBtn").addEventListener("click", () => { const id = detailId; closeDetail(); askDelete(id); });
 
     $("#closeViewModal").addEventListener("click", closePublicView);
     $("#closeViewModal2").addEventListener("click", closePublicView);
-    $("#viewModalOverlay").addEventListener("click", (e) => {
-      if (e.target === e.currentTarget) closePublicView();
-    });
+    $("#viewModalOverlay").addEventListener("click", (e) => { if (e.target === e.currentTarget) closePublicView(); });
 
-    $("#confirmDeleteBtn").addEventListener("click", async () => {
-      if (pendingDeleteId) {
-        await Store.remove(pendingDeleteId);
-        toast("فایل حذف شد.");
-      }
-      closeConfirm();
-      renderAll();
-    });
+    $("#confirmDeleteBtn").addEventListener("click", async () => { if (pendingDeleteId) { await Store.remove(pendingDeleteId); toast("فایل حذف شد."); } closeConfirm(); renderAll(); });
     $("#cancelDeleteBtn").addEventListener("click", closeConfirm);
 
     $("#btnExport").addEventListener("click", exportJSON);
     $("#btnImportTrigger").addEventListener("click", () => $("#btnImport").click());
-    $("#btnImport").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) importJSON(file);
-      e.target.value = "";
-    });
+    $("#btnImport").addEventListener("change", (e) => { const file = e.target.files[0]; if (file) importJSON(file); e.target.value = ""; });
 
-    $("#btnToggleView").addEventListener("click", () => {
-      viewMode = !viewMode;
-      $("#btnToggleView").textContent = viewMode ? "🔙 بازگشت به مدیریت" : "👁 نمایش عمومی";
-      renderAll();
-    });
+    $("#btnToggleView").addEventListener("click", () => { viewMode = !viewMode; $("#btnToggleView").textContent = viewMode ? "🔙 بازگشت به مدیریت" : "👁 نمایش عمومی"; renderAll(); });
 
-    [
-      $("#listingModalOverlay"),
-      $("#detailModalOverlay"),
-      $("#confirmModalOverlay")
-    ].forEach((ov) => {
-      ov.addEventListener("click", (e) => {
-        if (e.target === ov) ov.classList.add("hidden");
-      });
-    });
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        $$(".modal-overlay").forEach((ov) => ov.classList.add("hidden"));
-      }
-    });
+    [ $("#listingModalOverlay"), $("#detailModalOverlay"), $("#confirmModalOverlay") ].forEach((ov) => { ov.addEventListener("click", (e) => { if (e.target === ov) ov.classList.add("hidden"); }); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") $$(".modal-overlay").forEach((ov) => ov.classList.add("hidden")); });
   }
 
   // ===== شروع =====
