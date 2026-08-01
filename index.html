@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>گروه مشاورین املاک اخلاصی | مدیریت فایل‌ها</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<!-- ===================== صفحه ورود ===================== -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-brand">
+    <div class="guilloche-strip guilloche"></div>
+    <div class="brand-inner">
+      <div class="brand-crest">
+        <div class="seal"><span class="seal-mark">اخ</span></div>
+        <div class="brand-name">
+          گروه مشاورین املاک اخلاصی
+          <small>سامانه مدیریت فایل‌های ملکی</small>
+        </div>
+      </div>
+      <h1 class="brand-headline">هر فایل، یک سند.<br>هر سند، یک مُهر اطمینان.</h1>
+      <p class="brand-sub">
+        ثبت، جست‌وجو و پیگیری فایل‌های فروش و اجارهٔ آپارتمان، ویلا و زمین —
+        همه در یک سامانهٔ سریع و مرتب برای تیم مشاوران.
+      </p>
+      <div class="brand-stats">
+        <div><b id="statTotalBrand">۰</b><span>فایل ثبت‌شده</span></div>
+        <div><b id="statSaleBrand">۰</b><span>فروش</span></div>
+        <div><b id="statRentBrand">۰</b><span>اجاره</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-form-wrap">
+    <div class="login-card">
+      <h1>ورود مشاور</h1>
+      <p class="lead">برای دسترسی به فایل‌ها، نام کاربری و رمز عبور خود را وارد کنید.</p>
+
+      <div id="loginError" class="login-error hidden">
+        <span>⚠</span><span id="loginErrorText">نام کاربری یا رمز عبور اشتباه است.</span>
+      </div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="username">نام کاربری</label>
+          <div class="input-wrap">
+            <input type="text" id="username" autocomplete="username" placeholder="مثلاً: reza" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="password">رمز عبور</label>
+          <div class="input-wrap">
+            <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+          </div>
+        </div>
+        <div class="remember-row">
+          <label><input type="checkbox" id="rememberMe"> مرا به خاطر بسپار</label>
+        </div>
+        <button type="submit" class="btn btn-primary">ورود به سامانه</button>
+      </form>
+
+      <div class="login-hint">
+        نسخهٔ نمایشی: نام کاربری <b>admin</b> و رمز <b>ekhlasi1404</b>. مدیریت
+        کاربران در فایل <code>assets/app.js</code> قابل ویرایش است.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== اپلیکیشن ===================== -->
+<div id="appShell" class="app-shell hidden">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="seal seal-sm"><span class="seal-mark">اخ</span></div>
+      <div class="brand-name">گروه مشاورین املاک اخلاصی</div>
+    </div>
+    <div class="topbar-actions">
+      <span class="agent-chip"><span class="dot"></span><span id="agentName">مشاور</span></span>
+      <button class="btn btn-brass btn-sm" id="btnNewListing">+ فایل جدید</button>
+      <button class="btn btn-ghost btn-sm" id="btnLogout">خروج</button>
+    </div>
+  </header>
+
+  <div class="app-body">
+    <aside class="sidebar">
+      <h3>آمار کلی</h3>
+      <div class="stat-cards">
+        <div class="stat-card"><b id="statTotal">۰</b><span>کل فایل‌ها</span></div>
+        <div class="stat-card"><b id="statSale">۰</b><span>فروش</span></div>
+        <div class="stat-card"><b id="statRent">۰</b><span>اجاره</span></div>
+        <div class="stat-card"><b id="statAvailable">۰</b><span>موجود</span></div>
+      </div>
+
+      <h3>نوع معامله</h3>
+      <div class="filter-group" id="dealFilter">
+        <label><input type="radio" name="deal" value="all" checked> همه</label>
+        <label><input type="radio" name="deal" value="sale"> فروش</label>
+        <label><input type="radio" name="deal" value="rent"> اجاره</label>
+      </div>
+
+      <h3>نوع ملک</h3>
+      <div class="filter-group" id="typeFilter">
+        <label><input type="checkbox" value="apartment" checked> آپارتمان</label>
+        <label><input type="checkbox" value="villa" checked> ویلا</label>
+        <label><input type="checkbox" value="land" checked> زمین</label>
+      </div>
+
+      <h3>وضعیت</h3>
+      <div class="filter-group" id="statusFilter">
+        <label><input type="checkbox" value="available" checked> موجود</label>
+        <label><input type="checkbox" value="reserved" checked> بیعانه‌شده</label>
+        <label><input type="checkbox" value="sold" checked> فروخته/اجاره‌شده</label>
+      </div>
+
+      <h3>پشتیبان‌گیری</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" id="btnExport">خروجی JSON</button>
+        <button class="btn btn-ghost btn-sm" id="btnImportTrigger">ورودی JSON</button>
+        <input type="file" id="btnImport" class="import-input" accept="application/json">
+      </div>
+    </aside>
+
+    <main class="main-col">
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="جست‌وجو در عنوان، کد فایل، آدرس یا توضیحات…">
+          <span class="icon">⌕</span>
+        </div>
+        <select id="sortSelect" class="sort-select">
+          <option value="newest">جدیدترین</option>
+          <option value="oldest">قدیمی‌ترین</option>
+          <option value="price-desc">گران‌ترین</option>
+          <option value="price-asc">ارزان‌ترین</option>
+        </select>
+      </div>
+
+      <div class="results-meta" id="resultsMeta"></div>
+      <div class="grid" id="listingsGrid"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="seal"><span class="seal-mark">؟</span></div>
+        <h3>فایلی پیدا نشد</h3>
+        <p>فیلترها را تغییر دهید یا یک فایل جدید ثبت کنید.</p>
+        <button class="btn btn-brass" id="btnEmptyNew">ثبت فایل جدید</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===================== مودال فرم فایل ===================== -->
+<div id="listingModalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="listingModalTitle">ثبت فایل جدید</h2>
+      <button class="modal-close" id="closeListingModal">×</button>
+    </div>
+    <form id="listingForm">
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="form-field full">
+            <label>نوع معامله</label>
+            <div class="seg" id="dealSeg">
+              <button type="button" data-val="sale" class="active">فروش</button>
+              <button type="button" data-val="rent">اجاره</button>
+            </div>
+          </div>
+          <div class="form-field full">
+            <label>نوع ملک</label>
+            <div class="seg" id="typeSeg">
+              <button type="button" data-val="apartment" class="active">آپارتمان</button>
+              <button type="button" data-val="villa">ویلا</button>
+              <button type="button" data-val="land">زمین</button>
+            </div>
+          </div>
+
+          <div class="form-field full">
+            <label for="fTitle">عنوان فایل</label>
+            <input type="text" id="fTitle" placeholder="مثلاً: آپارتمان نوساز سه‌خوابه، سعادت‌آباد" required>
+          </div>
+
+          <div class="form-field">
+            <label id="priceLabel" for="fPrice">قیمت (تومان)</label>
+            <input type="number" id="fPrice" placeholder="مثلاً: 4200000000" required>
+          </div>
+          <div class="form-field" id="depositField">
+            <label for="fDeposit">ودیعه/رهن (تومان)</label>
+            <input type="number" id="fDeposit" placeholder="در صورت اجاره">
+          </div>
+
+          <div class="form-field">
+            <label for="fArea">متراژ (متر مربع)</label>
+            <input type="number" id="fArea" placeholder="مثلاً: 145" required>
+          </div>
+          <div class="form-field" id="roomsField">
+            <label for="fRooms">تعداد خواب</label>
+            <input type="number" id="fRooms" placeholder="مثلاً: 3">
+          </div>
+
+          <div class="form-field">
+            <label for="fRegion">منطقه/محله</label>
+            <input type="text" id="fRegion" placeholder="مثلاً: سعادت‌آباد" required>
+          </div>
+          <div class="form-field">
+            <label for="fAddress">آدرس دقیق</label>
+            <input type="text" id="fAddress" placeholder="خیابان، کوچه، پلاک">
+          </div>
+
+          <div class="form-field">
+            <label for="fStatus">وضعیت</label>
+            <select id="fStatus">
+              <option value="available">موجود</option>
+              <option value="reserved">بیعانه‌شده</option>
+              <option value="sold">فروخته/اجاره‌شده</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label for="fPhone">شماره تماس مالک/مشاور</label>
+            <input type="tel" id="fPhone" placeholder="09xxxxxxxxx">
+          </div>
+
+          <div class="form-field full">
+            <label for="fImage">لینک تصویر (اختیاری)</label>
+            <input type="url" id="fImage" placeholder="https://...">
+          </div>
+
+          <div class="form-field full">
+            <label for="fDesc">توضیحات</label>
+            <textarea id="fDesc" placeholder="ویژگی‌های ملک، امکانات، نکات مهم…"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">ذخیره فایل</button>
+        <button type="button" class="btn btn-ghost" id="cancelListingModal">انصراف</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===================== مودال جزئیات ===================== -->
+<div id="detailModalOverlay" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>جزئیات فایل</h2>
+      <button class="modal-close" id="closeDetailModal">×</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-brass" id="detailEditBtn">ویرایش</button>
+      <button class="btn btn-danger" id="detailDeleteBtn">حذف فایل</button>
+      <button class="btn btn-ghost" id="closeDetailModal2">بستن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== مودال تایید حذف ===================== -->
+<div id="confirmModalOverlay" class="modal-overlay confirm-modal hidden">
+  <div class="modal">
+    <div class="modal-body">
+      <div class="icon-warn">!</div>
+      <h2 style="font-size:16px; margin:0 0 8px;">حذف این فایل؟</h2>
+      <p style="font-size:13px; color:var(--stone); margin:0;">این عملیات قابل بازگشت نیست.</p>
+      <div class="confirm-actions">
+        <button class="btn btn-danger" id="confirmDeleteBtn">بله، حذف کن</button>
+        <button class="btn btn-ghost" id="cancelDeleteBtn">انصراف</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
