@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>گروه مشاورین املاک اخلاصی</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <!-- کانتینر پیام‌های اعلان -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div id="app">
+
+        <!-- ===== هدر ===== -->
+        <header class="header">
+            <div class="header-inner">
+                <div class="header-brand">
+                    <div class="brand-icon"><i class="fas fa-building"></i></div>
+                    <div class="brand-text">
+                        <span class="brand-title">گروه مشاورین املاک اخلاصی</span>
+                        <span class="brand-subtitle">سامانه مدیریت فایل‌های ملکی</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="user-badge" id="userBadge" style="display:none;">
+                        <span class="user-avatar"><i class="fas fa-user"></i></span>
+                        <span class="user-name" id="agentName">مشاور</span>
+                    </div>
+                    <button class="btn-gold" id="btnNewListing" style="display:none;">
+                        <i class="fas fa-plus"></i> فایل جدید
+                    </button>
+                    <button class="btn-gold" id="btnNewContract" style="display:none;">
+                        <i class="fas fa-file-signature"></i> قرارداد
+                    </button>
+                    <button class="btn-login" id="btnLoginTrigger">
+                        <i class="fas fa-sign-in-alt"></i> ورود
+                    </button>
+                    <button class="btn-outline" id="btnLogout" style="display:none;">
+                        <i class="fas fa-sign-out-alt"></i> خروج
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== ناوبری ===== -->
+        <nav class="nav-tabs" id="navTabs">
+            <button class="tab active" data-tab="listings"><i class="fas fa-th-list"></i> فایل‌ها</button>
+            <button class="tab" data-tab="contracts" id="contractsTab" style="display:none;"><i class="fas fa-file-contract"></i> قراردادها</button>
+            <button class="tab" data-tab="users" id="usersTab" style="display:none;"><i class="fas fa-users-cog"></i> کاربران</button>
+            <button class="tab" data-tab="settings" id="settingsTab" style="display:none;"><i class="fas fa-cog"></i> تنظیمات</button>
+        </nav>
+
+        <!-- ===== آمار خلاصه ===== -->
+        <div class="stats-bar">
+            <div class="stat-item"><span class="stat-label">کل فایل‌ها:</span> <strong id="statTotal">۰</strong></div>
+            <div class="stat-item"><span class="stat-label">فروش:</span> <strong id="statSale">۰</strong></div>
+            <div class="stat-item"><span class="stat-label">اجاره:</span> <strong id="statRent">۰</strong></div>
+            <div class="stat-item"><span class="stat-label">موجود:</span> <strong id="statAvailable">۰</strong></div>
+        </div>
+
+        <!-- ===== بدنه اصلی ===== -->
+        <div class="app-body">
+
+            <!-- ===== بخش فایل‌ها ===== -->
+            <div id="listingsSection" class="main-section">
+                <div class="toolbar">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="searchInput" placeholder="جست‌وجو در عنوان یا کد فایل…" />
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-btn active" data-deal="all">همه</button>
+                        <button class="filter-btn" data-deal="sale">فروش</button>
+                        <button class="filter-btn" data-deal="rent">اجاره</button>
+                    </div>
+                </div>
+
+                <div class="results-meta" id="resultsMeta"></div>
+                <div class="listings-grid" id="listingsGrid"></div>
+                <div id="emptyState" class="empty-state hidden">
+                    <i class="fas fa-home empty-icon"></i>
+                    <h3>فایلی پیدا نشد</h3>
+                    <p>برای شروع، یک فایل جدید ثبت کنید.</p>
+                    <button class="btn-gold" id="btnEmptyNew" style="display:none;">
+                        <i class="fas fa-plus"></i> ثبت فایل جدید
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== بخش قراردادها ===== -->
+            <div id="contractsSection" class="main-section" style="display:none;">
+                <div class="toolbar">
+                    <div class="search-wrapper">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="contractSearchInput" placeholder="جست‌وجو در نام موجر یا مستاجر…" />
+                    </div>
+                    <button class="btn-gold" id="btnNewContractTop" style="display:none;">
+                        <i class="fas fa-plus"></i> قرارداد جدید
+                    </button>
+                </div>
+                <div class="results-meta" id="contractResultsMeta"></div>
+                <div class="listings-grid" id="contractsGrid"></div>
+                <div id="contractEmptyState" class="empty-state hidden">
+                    <i class="fas fa-file-contract empty-icon"></i>
+                    <h3>هیچ قراردادی ثبت نشده است</h3>
+                    <button class="btn-gold" id="btnEmptyContract" style="display:none;">
+                        <i class="fas fa-plus"></i> ثبت قرارداد جدید
+                    </button>
+                </div>
+            </div>
+
+            <!-- ===== بخش کاربران ===== -->
+            <div id="usersSection" class="main-section" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-users-cog"></i> مدیریت کاربران</h2>
+                        <span class="badge-admin">فقط مدیر</span>
+                    </div>
+                    <div id="userList"></div>
+                    <div class="add-user-form">
+                        <div class="form-group">
+                            <label>نام کاربری</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="newUsername" placeholder="نام کاربری" />
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>رمز عبور</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-lock input-icon"></i>
+                                <input type="text" id="newPassword" placeholder="رمز عبور" />
+                            </div>
+                        </div>
+                        <button class="btn-gold" id="btnAddUser">
+                            <i class="fas fa-plus"></i> افزودن کاربر
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== بخش تنظیمات ===== -->
+            <div id="settingsSection" class="main-section" style="display:none;">
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2><i class="fas fa-cog"></i> تنظیمات و پشتیبان‌گیری</h2>
+                    </div>
+                    <div class="status-info" id="githubStatus">
+                        <span class="status-dot online"></span>
+                        <span>✅ متصل به گیت‌هاب</span>
+                    </div>
+                    <div class="backup-info" style="margin-top:12px;">
+                        <i class="fas fa-clock"></i>
+                        <span>پشتیبان‌گیری خودکار هر ۳ ساعت انجام می‌شود</span>
+                    </div>
+                    <div class="backup-actions" style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn-gold" id="btnFullBackup"><i class="fas fa-download"></i> دانلود پشتیبان دستی</button>
+                        <button class="btn-outline" id="btnRestoreTrigger"><i class="fas fa-upload"></i> بازیابی پشتیبان</button>
+                        <input type="file" id="btnRestore" accept=".json" style="display:none;" />
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===== مودال ورود ===== -->
+    <div id="loginOverlay" class="modal-overlay hidden">
+        <div class="modal-login">
+            <div class="login-header">
+                <div class="login-icon"><i class="fas fa-building"></i></div>
+                <h2>ورود به سامانه</h2>
+                <p>گروه مشاورین املاک اخلاصی</p>
+            </div>
+            <div id="loginError" class="login-error hidden">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="loginErrorText">نام کاربری یا رمز عبور اشتباه است.</span>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>نام کاربری</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="username" placeholder="نام کاربری خود را وارد کنید" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>رمز عبور</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" id="password" placeholder="رمز عبور را وارد کنید" required />
+                    </div>
+                </div>
+                <div class="form-remember">
+                    <label><input type="checkbox" id="rememberMe" /> مرا به خاطر بسپار</label>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-gold btn-full"><i class="fas fa-sign-in-alt"></i> ورود به سیستم</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== مودال ثبت/ویرایش فایل ملکی ===== -->
+    <div id="listingModalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="listingModalTitle"><i class="fas fa-plus-circle"></i> ثبت فایل جدید</h2>
+                <button class="btn-close" id="closeListingModal">&times;</button>
+            </div>
+            <form id="listingForm">
+                <div class="modal-body">
+                    <div class="seg-group">
+                        <label>نوع معامله</label>
+                        <div class="seg-control" id="dealSeg">
+                            <button type="button" class="active" data-val="sale">فروش</button>
+                            <button type="button" data-val="rent">اجاره</button>
+                        </div>
+                    </div>
+                    <div class="seg-group">
+                        <label>نوع ملک</label>
+                        <div class="seg-control" id="typeSeg">
+                            <button type="button" class="active" data-val="apartment">آپارتمان</button>
+                            <button type="button" data-val="villa">ویلا</button>
+                            <button type="button" data-val="land">زمین</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>عنوان فایل *</label>
+                        <input type="text" id="fTitle" placeholder="مثال: آپارتمان ۱۲۰ متری نوساز" required />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label id="priceLabel">قیمت (تومان) *</label>
+                            <input type="number" id="fPrice" min="0" required />
+                        </div>
+                        <div class="form-group" id="depositField" style="display:none;">
+                            <label>ودیعه / رهن (تومان)</label>
+                            <input type="number" id="fDeposit" min="0" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>متراژ (متر) *</label>
+                            <input type="number" id="fArea" min="1" required />
+                        </div>
+                        <div class="form-group" id="roomsField">
+                            <label>تعداد خواب</label>
+                            <input type="number" id="fRooms" min="0" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>منطقه / شهر *</label>
+                            <input type="text" id="fRegion" required />
+                        </div>
+                        <div class="form-group">
+                            <label>وضعیت ملک</label>
+                            <select id="fStatus">
+                                <option value="available">موجود</option>
+                                <option value="reserved">بیعانه‌شده</option>
+                                <option value="sold">فروخته/اجاره‌شده</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>آدرس دقیق</label>
+                        <input type="text" id="fAddress" placeholder="خیابان، کوچه، پلاک..." />
+                    </div>
+                    <div class="form-group">
+                        <label>شماره تماس *</label>
+                        <input type="tel" id="fPhone" required />
+                    </div>
+                    <div class="form-group">
+                        <label>تصاویر ملک (حداکثر ۲ تصویر)</label>
+                        <div class="file-upload-grid">
+                            <div class="file-upload" id="fileUpload1">
+                                <input type="file" id="fImage1" accept="image/*" />
+                                <span>انتخاب تصویر ۱</span>
+                                <div class="img-preview" id="preview1"></div>
+                            </div>
+                            <div class="file-upload" id="fileUpload2">
+                                <input type="file" id="fImage2" accept="image/*" />
+                                <span>انتخاب تصویر ۲</span>
+                                <div class="img-preview" id="preview2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>توضیحات تکمیلی</label>
+                        <textarea id="fDesc" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" id="cancelListingModal">انصراف</button>
+                    <button type="submit" class="btn-gold"><i class="fas fa-save"></i> ذخیره فایل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== مودال ثبت/ویرایش قرارداد اجاره ===== -->
+    <div id="contractModalOverlay" class="modal-overlay hidden">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2 id="contractModalTitle"><i class="fas fa-file-signature"></i> ثبت قرارداد اجاره</h2>
+                <button class="btn-close" id="closeContractModal">&times;</button>
+            </div>
+            <div class="step-wizard">
+                <div class="step active" data-step="1">۱. طرفین</div>
+                <div class="step" data-step="2">۲. مورد اجاره</div>
+                <div class="step" data-step="3">۳. مدت و مبلغ</div>
+                <div class="step" data-step="4">۴. شرایط و جرایم</div>
+                <div class="step" data-step="5">۵. توضیحات و شهود</div>
+            </div>
+            <form id="contractForm">
+                <div class="modal-body">
+                    <!-- گام ۱ -->
+                    <div class="step-content active" data-step="1">
+                        <h3>مشخصات موجر</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>نام *</label><input type="text" id="c_mojer_name" required /></div>
+                            <div class="form-group"><label>نام خانوادگی *</label><input type="text" id="c_mojer_family" required /></div>
+                            <div class="form-group"><label>نام پدر</label><input type="text" id="c_mojer_father" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>شماره شناسنامه</label><input type="text" id="c_mojer_id" /></div>
+                            <div class="form-group"><label>محل صدور</label><input type="text" id="c_mojer_issue" /></div>
+                            <div class="form-group"><label>کد ملی</label><input type="text" id="c_mojer_national" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>تلفن</label><input type="tel" id="c_mojer_phone" /></div>
+                            <div class="form-group" style="flex:2;"><label>آدرس موجر</label><input type="text" id="c_mojer_address" /></div>
+                        </div>
+                        <hr style="margin:15px 0; border:0; border-top:1px dashed #ccc;" />
+                        <h3>مشخصات مستاجر</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>نام *</label><input type="text" id="c_mostaajer_name" required /></div>
+                            <div class="form-group"><label>نام خانوادگی *</label><input type="text" id="c_mostaajer_family" required /></div>
+                            <div class="form-group"><label>نام پدر</label><input type="text" id="c_mostaajer_father" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>شماره شناسنامه</label><input type="text" id="c_mostaajer_id" /></div>
+                            <div class="form-group"><label>محل صدور</label><input type="text" id="c_mostaajer_issue" /></div>
+                            <div class="form-group"><label>کد ملی</label><input type="text" id="c_mostaajer_national" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>تلفن</label><input type="tel" id="c_mostaajer_phone" /></div>
+                            <div class="form-group" style="flex:2;"><label>آدرس مستاجر</label><input type="text" id="c_mostaajer_address" /></div>
+                        </div>
+                    </div>
+
+                    <!-- گام ۲ -->
+                    <div class="step-content" data-step="2">
+                        <h3>مشخصات ملک مورد اجاره</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>سهم (دانگ)</label><input type="text" id="c_share" value="6" /></div>
+                            <div class="form-group" style="flex:2;"><label>آدرس ملک *</label><input type="text" id="c_property_address" required /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>پلاک</label><input type="text" id="c_plaque" /></div>
+                            <div class="form-group"><label>طبقه</label><input type="text" id="c_floor" /></div>
+                            <div class="form-group"><label>واحد</label><input type="text" id="c_unit" /></div>
+                            <div class="form-group"><label>کد پستی</label><input type="text" id="c_postal_code" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>پلاک ثبتی اصلی</label><input type="text" id="c_reg_plaque_main" /></div>
+                            <div class="form-group"><label>پلاک ثبتی فرعی</label><input type="text" id="c_reg_plaque_sub" /></div>
+                            <div class="form-group"><label>بخش ثبتی</label><input type="text" id="c_reg_section" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>مساحت (متر مربع)</label><input type="number" id="c_area" /></div>
+                            <div class="form-group"><label>سریال سند</label><input type="text" id="c_deed_serial" /></div>
+                            <div class="form-group"><label>صفحه</label><input type="text" id="c_deed_page" /></div>
+                            <div class="form-group"><label>دفتر</label><input type="text" id="c_deed_book" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>شماره ثبت ملک</label><input type="text" id="c_property_reg_no" /></div>
+                            <div class="form-group"><label>اتاق خواب</label><input type="number" id="c_rooms" /></div>
+                            <div class="form-group"><label>شماره پارکینگ</label><input type="text" id="c_parking_no" /></div>
+                            <div class="form-group"><label>شماره انباری</label><input type="text" id="c_storage_no" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>متراژ انباری</label><input type="text" id="c_storage_area" /></div>
+                            <div class="form-group"><label>تعداد خط تلفن</label><input type="number" id="c_phone_lines" /></div>
+                            <div class="form-group"><label>شماره تلفن دایر</label><input type="text" id="c_phone_number" /></div>
+                            <div class="form-group"><label>نوع کاربری</label><input type="text" id="c_usage" value="مسکونی" /></div>
+                        </div>
+                    </div>
+
+                    <!-- گام ۳ -->
+                    <div class="step-content" data-step="3">
+                        <h3>مدت اجاره و مبالغ</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>شروع قرارداد (روز/ماه/سال)</label>
+                                <div style="display:flex; gap:4px;">
+                                    <input type="text" id="c_start_day" placeholder="روز" />
+                                    <input type="text" id="c_start_month" placeholder="ماه" />
+                                    <input type="text" id="c_start_year" placeholder="سال" />
+                                </div>
+                            </div>
+                            <div class="form-group"><label>پایان قرارداد (روز/ماه/سال)</label>
+                                <div style="display:flex; gap:4px;">
+                                    <input type="text" id="c_end_day" placeholder="روز" />
+                                    <input type="text" id="c_end_month" placeholder="ماه" />
+                                    <input type="text" id="c_end_year" placeholder="سال" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>تاریخ عقد قرارداد</label>
+                                <div style="display:flex; gap:4px;">
+                                    <input type="text" id="c_contract_day" placeholder="روز" />
+                                    <input type="text" id="c_contract_month" placeholder="ماه" />
+                                    <input type="text" id="c_contract_year" placeholder="سال" />
+                                </div>
+                            </div>
+                            <div class="form-group"><label>تاریخ تحویل ملک</label>
+                                <div style="display:flex; gap:4px;">
+                                    <input type="text" id="c_delivery_day" placeholder="روز" />
+                                    <input type="text" id="c_delivery_month" placeholder="ماه" />
+                                    <input type="text" id="c_delivery_year" placeholder="سال" />
+                                </div>
+                            </div>
+                        </div>
+                        <hr style="margin:15px 0; border:0; border-top:1px dashed #ccc;" />
+                        <div class="form-row">
+                            <div class="form-group"><label>اجاره ماهانه (ریال)</label><input type="number" id="c_monthly_rent" min="0" /></div>
+                            <div class="form-group"><label>مبلغ قرض‌الحسنه / رهن (ریال)</label><input type="number" id="c_loan_amount" min="0" /></div>
+                        </div>
+                        <div class="form-group"><label>قرض‌الحسنه به حروف</label><input type="text" id="c_loan_words" /></div>
+                    </div>
+
+                    <!-- گام ۴ -->
+                    <div class="step-content" data-step="4">
+                        <h3>شرایط تسلیم و آثار قرارداد</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>تعداد سکنه (نفرات)</label><input type="number" id="c_tenant_count" /></div>
+                            <div class="form-group"><label>نحوه استفاده</label><input type="text" id="c_usage_type" value="مسکونی" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>اجرت‌المثل روزانه عدم تحویل (ریال)</label><input type="number" id="c_daily_penalty" /></div>
+                            <div class="form-group"><label>خسارت تاخیر روزانه (ریال)</label><input type="number" id="c_delay_penalty" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>شهرستان</label><input type="text" id="c_city" /></div>
+                            <div class="form-group"><label>حق‌الزحمه موجر (ریال)</label><input type="number" id="c_commission_mojer" /></div>
+                            <div class="form-group"><label>حق‌الزحمه مستاجر (ریال)</label><input type="number" id="c_commission_mostaajer" /></div>
+                        </div>
+                    </div>
+
+                    <!-- گام ۵ -->
+                    <div class="step-content" data-step="5">
+                        <h3>اطلاعات تکمیلی، شهود و امضاء</h3>
+                        <div class="form-row">
+                            <div class="form-group"><label>شماره ثبت قرارداد</label><input type="text" id="c_contract_number" /></div>
+                            <div class="form-group"><label>شناسه صنفی مشاور املاک</label><input type="text" id="c_agent_id" /></div>
+                            <div class="form-group"><label>سریال هولوگرام</label><input type="text" id="c_hologram" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>نام مشاور املاک</label><input type="text" id="c_agent_name" /></div>
+                            <div class="form-group"><label>کارشناس حقوقی</label><input type="text" id="c_expert_name" /></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label>شاهد اول</label><input type="text" id="c_shahid1" /></div>
+                            <div class="form-group"><label>شاهد دوم</label><input type="text" id="c_shahid2" /></div>
+                        </div>
+                        <div class="form-group">
+                            <label>توضیحات و شروط اختصاصی قرارداد</label>
+                            <textarea id="c_notes" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-outline" id="prevStepBtn" style="display:none;">قبلی</button>
+                    <button type="button" class="btn-outline" id="previewContractBtn"><i class="fas fa-eye"></i> پیش‌نمایش</button>
+                    <button type="button" class="btn-outline" id="cancelContractModal">انصراف</button>
+                    <button type="button" class="btn-gold" id="nextStepBtn">بعدی <i class="fas fa-arrow-left"></i></button>
+                    <button type="submit" id="saveContractBtn" style="display:none;"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== مودال پیش‌نمایش قرارداد ===== -->
+    <div id="previewModalOverlay" class="modal-overlay hidden">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-alt"></i> پیش‌نمایش قرارداد اجاره</h2>
+                <button class="btn-close" id="closePreviewModal">&times;</button>
+            </div>
+            <div class="modal-body" style="background:#f5f5f5; padding:15px;">
+                <div id="previewContent" class="preview-paper"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-gold" id="downloadPDFBtn"><i class="fas fa-file-pdf"></i> دانلود PDF</button>
+                <button type="button" class="btn-outline" id="closePreviewModal2">بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== مودال جزئیات فایل ملکی ===== -->
+    <div id="detailModalOverlay" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> مشخصات ملک</h2>
+                <button class="btn-close" id="closeDetailModal">&times;</button>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn-gold" id="detailEditBtn"><i class="fas fa-edit"></i> ویرایش</button>
+                <button type="button" class="btn-danger" id="detailDeleteBtn"><i class="fas fa-trash"></i> حذف</button>
+                <button type="button" class="btn-outline" id="closeDetailModal2">بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== مودال تأیید حذف فایل ===== -->
+    <div id="confirmModalOverlay" class="modal-overlay hidden">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>حذف فایل</h2>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف این فایل مطمئن هستید؟ این عملیات قابل بازگشت نیست.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" id="cancelDeleteBtn">انصراف</button>
+                <button type="button" class="btn-danger" id="confirmDeleteBtn">حذف شود</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== مودال تأیید حذف قرارداد ===== -->
+    <div id="confirmContractModalOverlay" class="modal-overlay hidden">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>حذف قرارداد</h2>
+            </div>
+            <div class="modal-body">
+                <p>آیا از حذف این قرارداد مطمئن هستید؟</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" id="cancelContractDeleteBtn">انصراف</button>
+                <button type="button" class="btn-danger" id="confirmContractDeleteBtn">حذف شود</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== مودال تأیید بازیابی پشتیبان ===== -->
+    <div id="restoreConfirmModal" class="modal-overlay hidden">
+        <div class="modal modal-sm">
+            <div class="modal-header">
+                <h2>بازیابی اطلاعات پشتیبان</h2>
+            </div>
+            <div class="modal-body">
+                <p>اطلاعات زیر جایگزین داده‌های فعلی خواهند شد:</p>
+                <div id="restorePreview" style="margin-top:10px; font-size:13px; line-height:1.6;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-outline" id="cancelRestoreBtn">انصراف</button>
+                <button type="button" class="btn-gold" id="confirmRestoreBtn">بازیابی اطلاعات</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
